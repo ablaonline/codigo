@@ -1,0 +1,159 @@
+<?php
+
+/**
+ *
+ * @package     FOLCS
+ * @subpackage  Permisos Item
+ * @author      Pablo Andrés Vélez Vidal <pavelez@colomboamericano.edu.co>
+ * @license     http://www.gnu.org/licenses/gpl.txt
+ * @copyright   Copyright (c) 2011 COLOMBO-AMERICANO
+ * @version     0.1
+ *
+ **/
+
+
+
+
+
+class Destacado{
+
+
+
+/**
+*
+* Metodo Insertar--> ingresa a la base de datos a la tabla destacados los "me gusta"
+*
+**/
+
+   public function insertarDestacados($idModulo, $idItem, $idUsuario){
+     global $sql, $configuracion;
+
+          $datos = array(
+            "id_modulo"  =>  $idModulo,
+            "id_item"    =>  $idItem,
+            "id_usuario" =>  $idUsuario
+
+              );
+        
+
+        $consulta = $sql->insertar("destacados", $datos);
+
+
+        if ($consulta) {
+
+            return true;      
+
+        } else {
+
+            return false;
+
+        }//fin del if        
+
+
+     }//fin del metodo insertar
+
+
+
+
+/**
+*
+* Metodo Eliminar--> Es llamado cuando se requiere eliminar un punto o un "me gusta" de destacados
+**/
+
+    public function eliminarDestacados($idModulo, $idItem, $idUsuario){
+    global $sql, $configuracion;
+
+       $condicion = "id_item = '".$idItem."' AND id_modulo = '".$idModulo."' AND id_usuario = '".$idUsuario."'";
+
+       $borrar = $sql->eliminar("destacados", $condicion); 
+
+            if ($borrar) {
+
+              return true;      
+
+            } else {
+
+              return false;
+
+             }//fin del if    
+     
+    }//Fin del metodo Eliminar
+
+
+    
+/**
+ *Metodo que se encarga de eliminar todos los registros de me gusta de un determinado item de determinado
+ * modulo en caso de que este sea eliminado
+ * 
+ * @global type $sql
+ * @global type $configuracion
+ * @param type $idModulo
+ * @param type $idItem
+ * @return type boolean
+ */
+    public function eliminarTodosDestacados($idModulo, $idItem){
+    global $sql, $configuracion;
+
+       $condicion = "id_item = '".$idItem."' AND id_modulo = '".$idModulo."'";
+
+       $borrar = $sql->eliminar("destacados", $condicion); 
+       Recursos::escribirTxt("id registro: ".$idRegistro." id modulo : ".$idModulo, 7);
+            if ($borrar) {
+              return true;      
+
+            } else {
+              return false;
+
+            }//fin del if    
+     
+    }//Fin del metodo Eliminar
+    
+    
+    
+
+    /**
+     *
+     * Cantidad de destacados que tiene este item
+     *
+     * @param entero $id 
+     *
+     */
+    public  function cantidadDestacados($idModulo, $idItem) {
+        global  $sql;
+       
+
+        $registros = $sql->obtenerValor("destacados", "count(*)", "id_modulo = '".$idModulo."' AND id_item = '".$idItem."'");
+        
+        return $registros;
+
+     }  //Fin del metodo cantidad Destacados
+
+
+
+
+    /**
+     *
+     * Saber si a un usuario determinado le gusta un Item
+     *
+     * @param entero $id 
+     *
+     */
+    public  function meGusta($idModulo, $idItem, $idUsuario) {
+        global  $sql;
+       
+
+        $registros = $sql->obtenerValor("destacados", "count(*)", "id_modulo = '".$idModulo."' AND id_item = '".$idItem."' AND id_usuario = '".$idUsuario."'");
+        
+        return $registros;
+
+     }  //Fin del metodo cantidad Destacados
+
+
+
+
+      
+
+
+
+
+}//fin de la clase permisos item

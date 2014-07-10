@@ -1,0 +1,53 @@
+#Options -MultiViews -Indexes
+php_value display_errors off
+#php_value error_log "logs/php.log"
+
+RewriteEngine On
+RewriteBase /
+
+# Página principal 
+RewriteRule ^/?$ - [L]
+RewriteRule ^/?index.php$ - [L]
+
+RewriteRule ^/?imagenes/?(.*)?$ - [L]
+RewriteRule ^/?media/?(.*)?$ - [L]
+RewriteRule ^/?reproductor/?(.*)?$ - [L]
+RewriteRule ^/?temas/?(.*)?$ - [L]
+RewriteRule ^/?javascript/?(.*)?$ - [L]
+RewriteRule ^/?temporal/?(.*)?$ - [L]
+
+RewriteRule ^/?modulos/?(.*)?$ - [L]
+
+
+# Manejador de peticiones vía AJAX
+
+RewriteCond %{QUERY_STRING} ^(.*)start=(.*)\&end=(.*)$
+RewriteRule ^/?ajax/([a-z_]+)/([A-Za-z_]+)$       index.php?via=ajax&modulo=$1&accion=$2&start=%2&end=%3 [L]
+
+RewriteRule ^/?ajax/([a-z_]+)/?$                 index.php?via=ajax&modulo=$1 [L]
+RewriteCond %{QUERY_STRING} ^(.*)term=(.*)$
+RewriteRule ^/?ajax/([a-z_]+)/([A-Za-z_]+)$       index.php?via=ajax&modulo=$1&accion=$2&cadena=%2 [L]
+RewriteRule ^/?ajax/([a-z_]+)/([A-Za-z_]+)/?$     index.php?via=ajax&modulo=$1&accion=$2 [L]
+
+# Manejador de módulos
+RewriteRule ^/?([a-z_]+)/?$ index.php?modulo=$1 [L]
+RewriteRule ^/?([a-z_]+)/([a-z_]+)/(.*)?/?$ index.php?modulo=$1&funcionalidad=$2&categoria=$3 [L]
+RewriteRule ^/?([a-z_]+)/(.*)?/?$ index.php?modulo=$1&ruta=$2 [L]
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTP:Accept-encoding} gzip
+RewriteCond %{HTTP_USER_AGENT} !Konqueror
+RewriteCond %{REQUEST_FILENAME}.gz -f
+RewriteRule ^(.*)\.(css|js)$ $1.$2.gz [QSA,L]
+<FilesMatch \.css\.gz$>
+ForceType text/css
+</FilesMatch>
+<FilesMatch \.js\.gz$>
+ForceType application/javascript
+</FilesMatch>
+</IfModule>
+<IfModule mod_mime.c>
+AddEncoding gzip .gz
+</IfModule>
+

@@ -1,0 +1,471 @@
+<?php
+
+/**
+ *
+ * @package     FOLCS
+ * @subpackage  Centros
+ * @author      Francisco J. Lozano B. <fjlozano@felinux.com.co>
+ * @author      Julian A. Mondragón <jmondragon@felinux.com.co>
+ * @license     http://www.gnu.org/licenses/gpl.txt
+ * @copyright   Copyright (c) 2009 FELINUX LTDA
+ * @version     0.1
+ *
+ **/
+
+global $url_accion,$forma_datos, $forma_id, $forma_procesar;
+
+if (isset($url_accion)) {
+    switch ($url_accion) {
+        case "add"          :   ($forma_procesar) ? $datos = $forma_datos : $datos = array();
+                                adicionarCentro($datos);
+                                break;
+        case "edit"         :   ($forma_procesar) ? $datos = $forma_datos : $datos = array();
+                                modificarCentro($forma_id, $datos);
+                                break;
+        case "delete"       :   ($forma_procesar) ? $confirmado = true : $confirmado = false;
+                                eliminarCentro($forma_id, $confirmado);
+                                break;
+        case "addBranch"    :   ($forma_procesar) ? $datos = $forma_datos : $datos = array();
+                                adicionarSede($datos);
+                                break;
+        case "editBranch"   :   ($forma_procesar) ? $datos = $forma_datos : $datos = array();
+                                modificarSede($forma_id, $datos);
+                                break;
+        case "deleteBranch" :   ($forma_procesar) ? $confirmado = true : $confirmado = false;
+                                eliminarSede($forma_id, $confirmado);
+                                break;
+    }
+}
+
+
+/**
+ * Funcion adicionar centro
+ * @global type $textos
+ * @global type $sql
+ * @global type $configuracion
+ * @global type $archivo_imagen
+ * @param type $datos 
+ */
+function adicionarCentro($datos = array()) {
+    global $textos, $sql, $configuracion, $archivo_imagen;
+
+    $centro    = new Centro();
+    $destino = "/ajax".$centro->urlBase."/add";
+    $respuesta = array();
+
+    if (empty($datos)) {
+        $codigo  = HTML::campoOculto("procesar", "true");
+        $codigo .= HTML::parrafo($textos->id("NOMBRE"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[nombre]", 50, 255);
+        $codigo .= HTML::parrafo($textos->id("CIUDAD"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[ciudad]", 50, 255, "", "autocompletable", "", array("title" => HTML::urlInterna("INICIO",0,true,"listCities")));
+        $codigo .= HTML::parrafo($textos->id("PAGINA_WEB"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[paginaWeb]", 50, 255);
+        $codigo .= HTML::parrafo($textos->id("DESCRIPCION"), "negrilla margenSuperior");
+        $codigo .= HTML::areaTexto("datos[descripcion]", 10, 60, "", "editor");
+        $codigo .= HTML::parrafo($textos->id("LOGO_CENTRO"), "negrilla margenSuperior");
+        $codigo .= HTML::campoArchivo("imagen", 50, 255);
+        $codigo .= HTML::parrafo(HTML::campoChequeo("datos[activo]", true).$textos->id("ACTIVO"), "margenSuperior");
+        $codigo .= HTML::parrafo(HTML::boton("chequeo", $textos->id("ACEPTAR")), "margenSuperior");
+        $codigo  = HTML::forma($destino, $codigo, "P", true);
+
+        $respuesta["generar"] = true;
+        $respuesta["codigo"]  = $codigo;
+        $respuesta["titulo"]  = HTML::contenedor(HTML::frase(HTML::parrafo($textos->id("ADICIONAR_CENTRO"), "letraNegra negrilla"), "bloqueTitulo-IS"), "encabezadoBloque-IS");
+        $respuesta["destino"] = "#cuadroDialogo";
+        $respuesta["ancho"]   = 750;
+        $respuesta["alto"]    = 540;
+
+    } else {
+        $respuesta["error"]   = true;
+
+        if (empty($datos["nombre"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_NOMBRE");
+
+        } elseif (empty($datos["ciudad"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_CIUDAD");
+
+        } elseif (empty($datos["descripcion"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_DESCRIPCION");
+
+        } elseif (!$sql->existeItem("lista_ciudades", "cadena", utf8_decode($datos["ciudad"]))) {
+            $respuesta["mensaje"] = $textos->id("ERROR_CIUDAD_INEXISTENTE");
+
+        } elseif (empty($archivo_imagen["tmp_name"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_IMAGEN");
+
+        } else {
+
+            $datos["ciudad"] = $sql->obtenerValor("lista_ciudades", "id", "cadena = '".utf8_decode($datos["ciudad"])."'");
+            $area            = getimagesize($archivo_imagen["tmp_name"]);
+            $formato         = strtolower(substr($archivo_imagen["name"], -3));
+
+            if ($formato != "jpg" && $formato != "png" && $formato != "gif") {
+                $respuesta["mensaje"] = $textos->id("ERROR_FORMATO_IMAGEN_CENTRO");
+
+            } elseif ($area[0] > $configuracion["DIMENSIONES"]["anchoCentroNormal"] || $area[1] > $configuracion["DIMENSIONES"]["altoCentroNormal"]) {
+                $respuesta["mensaje"] = $textos->id("ERROR_AREA_IMAGEN_CENTRO");
+
+            } else {
+
+                if ($centro->adicionar($datos)) {
+                    $respuesta["error"]   = false;
+                    $respuesta["accion"]  = "recargar";
+
+                } else {
+                    $respuesta["mensaje"] = $textos->id("ERROR_DESCONOCIDO");
+                }
+            }
+
+        }
+    }
+
+    Servidor::enviarJSON($respuesta);
+}
+
+/**
+ * Funcion modificar centro
+ * @global type $textos
+ * @global type $sql
+ * @global type $configuracion
+ * @global type $archivo_imagen
+ * @param type $id
+ * @param type $datos 
+ */
+function modificarCentro($id, $datos = array()) {
+    global $textos, $sql, $configuracion, $archivo_imagen;
+
+    $centro    = new Centro($id);
+    $destino = "/ajax".$centro->urlBase."/edit";
+    $respuesta = array();
+
+    if (empty($datos)) {
+        $ciudad  = $centro->ciudad.", ".$centro->estado.", ".$centro->pais;
+        $codigo  = HTML::campoOculto("procesar", "true");
+        $codigo .= HTML::campoOculto("id", $id);
+        $codigo .= HTML::parrafo($textos->id("NOMBRE"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[nombre]", 50, 255, $centro->nombre);
+        $codigo .= HTML::parrafo($textos->id("CIUDAD"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[ciudad]", 50, 255, $ciudad, "autocompletable", "", array("title" => HTML::urlInterna("INICIO",0,true,"listCities")));
+        $codigo .= HTML::parrafo($textos->id("PAGINA_WEB"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[paginaWeb]", 50, 255, $centro->paginaWeb);
+        $codigo .= HTML::parrafo($textos->id("DESCRIPCION"), "negrilla margenSuperior");
+        $codigo .= HTML::areaTexto("datos[descripcion]", 10, 60, $centro->descripcion, "editor");
+        $codigo .= HTML::parrafo($textos->id("LOGO_CENTRO"), "negrilla margenSuperior");
+        $codigo .= HTML::campoArchivo("imagen", 50, 255);
+        $codigo .= HTML::parrafo(HTML::campoChequeo("datos[activo]", $centro->activo).$textos->id("ACTIVO"), "margenSuperior");
+        $codigo .= HTML::parrafo(HTML::boton("chequeo", $textos->id("ACEPTAR")), "margenSuperior");
+        $codigo  = HTML::forma($destino, $codigo, "P", true);
+
+        $respuesta["generar"] = true;
+        $respuesta["codigo"]  = $codigo;
+        $respuesta["destino"] = "#cuadroDialogo";
+        $respuesta["titulo"]  = HTML::contenedor(HTML::frase(HTML::parrafo($textos->id("MODIFICAR_CENTRO"), "letraNegra negrilla"), "bloqueTitulo-IS"), "encabezadoBloque-IS");
+        $respuesta["ancho"]   = 700;
+        $respuesta["alto"]    = 500;
+
+    } else {
+        $respuesta["error"]   = true;
+        
+         if(!empty($archivo_imagen["tmp_name"])){
+            $validarFormato = Recursos::validarArchivo($archivo_imagen, array("jpg","png","gif", "jpeg"));
+            $area    = getimagesize($archivo_imagen["tmp_name"]);                                
+            
+        }//fin del si viene una imagen
+
+        if (empty($datos["nombre"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_NOMBRE");
+
+        } elseif (empty($datos["ciudad"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_CIUDAD");
+
+        } elseif (empty($datos["descripcion"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_DESCRIPCION");
+
+        } elseif ($validarFormato) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FORMATO_IMAGEN_CENTRO");
+
+        } elseif (!$sql->existeItem("lista_ciudades", "cadena", utf8_decode($datos["ciudad"]))) {
+            $respuesta["mensaje"] = $textos->id("ERROR_CIUDAD_INEXISTENTE");
+
+        } elseif ($area[0] > $configuracion["DIMENSIONES"]["anchoCentroNormal"] || $area[1] > $configuracion["DIMENSIONES"]["altoCentroNormal"]) {
+                $respuesta["mensaje"] = $textos->id("ERROR_AREA_IMAGEN_CENTRO");
+            }  else {
+
+            $datos["ciudad"] = $sql->obtenerValor("lista_ciudades", "id", "cadena = '".utf8_decode($datos["ciudad"])."'");
+
+            if ($centro->modificar($datos)) {
+                $respuesta["error"]   = false;
+                $respuesta["accion"]  = "recargar";
+
+            } else {
+                $respuesta["mensaje"] = $textos->id("ERROR_DESCONOCIDO");
+            }
+        }
+    }
+
+    Servidor::enviarJSON($respuesta);
+}
+
+
+/**
+ * Funcion eliminar centro
+ * @global type $textos
+ * @param type $id
+ * @param type $confirmado 
+ */
+function eliminarCentro($id, $confirmado) {
+    global $textos;
+
+    $centro    = new Centro($id);
+    $destino = "/ajax".$centro->urlBase."/delete";
+    $respuesta = array();
+
+    if (!$confirmado) {
+        $nombre  = HTML::frase($centro->nombre, "negrilla");
+        $nombre  = preg_replace("/\%1/", $nombre, $textos->id("CONFIRMAR_ELIMINACION"));
+        $codigo  = HTML::campoOculto("procesar", "true");
+        $codigo .= HTML::campoOculto("id", $id);
+        $codigo .= HTML::parrafo($nombre);
+        $codigo .= HTML::parrafo(HTML::boton("chequeo", $textos->id("ACEPTAR")), "margenSuperior");
+        $codigo  = HTML::forma($destino, $codigo);
+
+        $respuesta["generar"] = true;
+        $respuesta["codigo"]  = $codigo;
+        $respuesta["destino"] = "#cuadroDialogo";
+        $respuesta["titulo"]  = HTML::contenedor(HTML::frase(HTML::parrafo($textos->id("ELIMINAR_CENTRO"), "letraNegra negrilla"), "bloqueTitulo-IS"), "encabezadoBloque-IS");
+        $respuesta["ancho"]   = 380;
+        $respuesta["alto"]    = 120;
+    } else {
+
+        if ($centro->eliminar()) {
+            $respuesta["error"]   = false;
+            $respuesta["accion"]  = "recargar";
+
+        } else {
+            $respuesta["mensaje"] = $textos->id("ERROR_DESCONOCIDO");
+        }
+    }
+
+    Servidor::enviarJSON($respuesta);
+}
+
+
+/**
+ * Funcion adicionar sede
+ * @global type $textos
+ * @global type $sql
+ * @global type $forma_centro
+ * @param type $datos 
+ */
+function adicionarSede($datos = array()) {
+    global $textos, $sql, $forma_centro;
+
+    $sede    = new Sede();
+    $modulo  = new Modulo("CENTROS");
+    $destino = "/ajax/".$modulo->url."/addBranch";
+    $respuesta = array();
+
+    if (empty($datos)) {
+        $codigo  = HTML::campoOculto("procesar", "true");
+        $codigo .= HTML::campoOculto("datos[id_centro]", $forma_centro);
+        $codigo .= HTML::parrafo($textos->id("NOMBRE"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[nombre]", 50, 255);
+        $codigo .= HTML::parrafo($textos->id("CIUDAD"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[id_ciudad]", 50, 255, "", "autocompletable", "", array("title" => HTML::urlInterna("INICIO",0,true,"listCities")));
+        $codigo .= HTML::parrafo($textos->id("DIRECCION"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[direccion]", 50, 255);
+        $codigo .= HTML::parrafo($textos->id("TELEFONO_PRINCIPAL"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[telefono_1]", 50, 255);
+        $codigo .= HTML::parrafo($textos->id("TELEFONO_SECUNDARIO"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[telefono_2]", 50, 255);
+        $codigo .= HTML::parrafo($textos->id("CELULAR"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[celular]", 50, 255);
+        $codigo .= HTML::parrafo($textos->id("CORREO"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[correo]", 50, 255);
+//        $codigo .= HTML::parrafo($textos->id("LATITUD"), "negrilla margenSuperior");
+//        $codigo .= HTML::campoTexto("datos[latitud]", 50, 255);
+//        $codigo .= HTML::parrafo($textos->id("LONGITUD"), "negrilla margenSuperior");
+//        $codigo .= HTML::campoTexto("datos[longitud]", 50, 255);
+        $codigo .= HTML::parrafo(HTML::campoChequeo("datos[activo]", true).$textos->id("ACTIVO"), "margenSuperior");
+        $codigo .= HTML::parrafo(HTML::boton("chequeo", $textos->id("ACEPTAR")), "margenSuperior");
+        $codigo  = HTML::forma($destino, $codigo);
+
+        $respuesta["generar"] = true;
+        $respuesta["codigo"]  = $codigo;
+        $respuesta["titulo"]  = HTML::contenedor(HTML::frase(HTML::parrafo($textos->id("ADICIONAR_SEDE"), "letraNegra negrilla"), "bloqueTitulo-IS"), "encabezadoBloque-IS");
+        $respuesta["destino"] = "#cuadroDialogo";
+        $respuesta["ancho"]   = 480;
+        $respuesta["alto"]    = 500;
+
+    } else {
+        $respuesta["error"]   = true;
+
+        if (empty($datos["nombre"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_NOMBRE");
+
+        } elseif (empty($datos["id_ciudad"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_CIUDAD");
+
+        } elseif (empty($datos["direccion"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_DIRECCION");
+
+        } elseif (empty($datos["telefono_1"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_TELEFONO");
+
+        } elseif (empty($datos["correo"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_CORREO");
+
+        } elseif (!$sql->existeItem("lista_ciudades", "cadena", utf8_decode($datos["id_ciudad"]) )) {
+            $respuesta["mensaje"] = $textos->id("ERROR_CIUDAD_INEXISTENTE");
+
+        } else {
+
+            $datos["id_ciudad"] = $sql->obtenerValor("lista_ciudades", "id", "cadena = '".utf8_decode($datos["id_ciudad"])."'");
+
+            if ($sede->adicionar($datos)) {
+                $respuesta["error"]   = false;
+                $respuesta["accion"]  = "recargar";
+
+            } else {
+                $respuesta["mensaje"] = $textos->id("ERROR_DESCONOCIDO");
+            }
+
+        }
+    }
+
+    Servidor::enviarJSON($respuesta);
+}
+
+
+/**
+ * Funcion modificar sede
+ * @global type $textos
+ * @global type $sql
+ * @param type $id
+ * @param type $datos 
+ */
+function modificarSede($id, $datos = array()) {
+    global $textos, $sql;
+
+    $sede    = new Sede($id);
+    $modulo  = new Modulo("CENTROS");
+    $destino = "/ajax/".$modulo->url."/editBranch";
+    $respuesta = array();
+
+    if (empty($datos)) {
+        $ciudad  = $sede->ciudad.", ".$sede->estado.", ".$sede->pais;
+        $codigo  = HTML::campoOculto("procesar", "true");
+        $codigo .= HTML::campoOculto("id", $id);
+        $codigo .= HTML::parrafo($textos->id("NOMBRE"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[nombre]", 50, 255, $sede->nombre);
+        $codigo .= HTML::parrafo($textos->id("CIUDAD"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[id_ciudad]", 50, 255, $ciudad, "autocompletable", "", array("title" => HTML::urlInterna("INICIO",0,true,"listCities")));
+        $codigo .= HTML::parrafo($textos->id("DIRECCION"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[direccion]", 50, 255, $sede->direccion);
+        $codigo .= HTML::parrafo($textos->id("TELEFONO_PRINCIPAL"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[telefono_1]", 50, 255, $sede->telefono1);
+        $codigo .= HTML::parrafo($textos->id("TELEFONO_SECUNDARIO"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[telefono_2]", 50, 255, $sede->telefono2);
+        $codigo .= HTML::parrafo($textos->id("CELULAR"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[celular]", 50, 255, $sede->celular);
+        $codigo .= HTML::parrafo($textos->id("CORREO"), "negrilla margenSuperior");
+        $codigo .= HTML::campoTexto("datos[correo]", 50, 255, $sede->correo);
+//        $codigo .= HTML::parrafo($textos->id("LATITUD"), "negrilla margenSuperior");
+//        $codigo .= HTML::campoTexto("datos[latitud]", 50, 255, $sede->latitud);
+//        $codigo .= HTML::parrafo($textos->id("LONGITUD"), "negrilla margenSuperior");
+//        $codigo .= HTML::campoTexto("datos[longitud]", 50, 255, $sede->longitud);
+        $codigo .= HTML::parrafo(HTML::campoChequeo("datos[activo]", $sede->activo).$textos->id("ACTIVO"), "margenSuperior");
+        $codigo .= HTML::parrafo(HTML::boton("chequeo", $textos->id("ACEPTAR")), "margenSuperior");
+        $codigo  = HTML::forma($destino, $codigo);
+
+        $respuesta["generar"] = true;
+        $respuesta["codigo"]  = $codigo;
+        $respuesta["destino"] = "#cuadroDialogo";
+        $respuesta["titulo"]  = HTML::contenedor(HTML::frase(HTML::parrafo($textos->id("MODIFICAR_SEDE"), "letraNegra negrilla"), "bloqueTitulo-IS"), "encabezadoBloque-IS");
+        $respuesta["ancho"]   = 480;
+        $respuesta["alto"]    = 500;
+
+    } else {
+        $respuesta["error"]   = true;
+
+        if (empty($datos["nombre"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_NOMBRE");
+
+        } elseif (empty($datos["id_ciudad"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_CIUDAD");
+
+        } elseif (empty($datos["direccion"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_DIRECCION");
+
+        } elseif (empty($datos["telefono_1"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_TELEFONO");
+
+        } elseif (empty($datos["correo"])) {
+            $respuesta["mensaje"] = $textos->id("ERROR_FALTA_CORREO");
+
+        } elseif (!$sql->existeItem("lista_ciudades", "cadena", utf8_decode($datos["id_ciudad"]) )) {
+            $respuesta["mensaje"] = $textos->id("ERROR_CIUDAD_INEXISTENTE");
+
+        } else {
+            $datos["id_ciudad"] = $sql->obtenerValor("lista_ciudades", "id", "cadena = '".utf8_decode($datos["id_ciudad"])."'");
+
+            if ($sede->modificar($datos)) {
+                $respuesta["error"]   = false;
+                $respuesta["accion"]  = "recargar";
+
+            } else {
+                $respuesta["mensaje"] = $textos->id("ERROR_DESCONOCIDO");
+            }
+        }
+    }
+
+    Servidor::enviarJSON($respuesta);
+}
+
+
+/**
+ * Funcion Eliminar sede
+ * @global type $textos
+ * @param type $id
+ * @param type $confirmado 
+ */
+function eliminarSede($id, $confirmado) {
+    global $textos;
+
+    $sede    = new Sede($id);
+    $modulo  = new Modulo("CENTROS");
+    $destino = "/ajax/".$modulo->url."/deleteBranch";
+    $respuesta = array();
+
+    if (!$confirmado) {
+        $nombre  = HTML::frase($sede->nombre, "negrilla");
+        $nombre  = preg_replace("/\%1/", $nombre, $textos->id("CONFIRMAR_ELIMINACION"));
+        $codigo  = HTML::campoOculto("procesar", "true");
+        $codigo .= HTML::campoOculto("id", $id);
+        $codigo .= HTML::parrafo($nombre);
+        $codigo .= HTML::parrafo(HTML::boton("chequeo", $textos->id("ACEPTAR")), "margenSuperior");
+        $codigo  = HTML::forma($destino, $codigo);
+
+        $respuesta["generar"] = true;
+        $respuesta["codigo"]  = $codigo;
+        $respuesta["destino"] = "#cuadroDialogo";
+        $respuesta["titulo"]  = HTML::contenedor(HTML::frase(HTML::parrafo($textos->id("ELIMINAR_SEDE"), "letraNegra negrilla"), "bloqueTitulo-IS"), "encabezadoBloque-IS");
+        $respuesta["ancho"]   = 200;
+        $respuesta["alto"]    = 120;
+    } else {
+
+        if ($sede->eliminar()) {
+            $respuesta["error"]   = false;
+            $respuesta["accion"]  = "recargar";
+
+        } else {
+            $respuesta["mensaje"] = $textos->id("ERROR_DESCONOCIDO");
+        }
+    }
+
+    Servidor::enviarJSON($respuesta);
+}
+
+
+?>

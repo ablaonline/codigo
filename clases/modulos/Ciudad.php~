@@ -1,0 +1,387 @@
+<?php
+
+/**
+ *
+ * @package     FOLCS
+ * @subpackage  Ciudades
+ * @author      Pablo Andrés Vélez Vidal <pavelez@colomboamericano.edu.co>
+ * @author      Julian A. Mondragón <jmondragon@felinux.com.co>
+ * @license     http://www.gnu.org/licenses/gpl.txt
+ * @copyright   Copyright (c) 2011 Colombo-Americano Soft.
+ * @version     0.2
+ *
+ **/
+
+
+class Ciudad {
+
+    /**
+     * Código interno o identificador del país en la base de datos
+     * @var entero
+     */
+    public $id;
+
+
+    /**
+     * URL relativa del módulo de la ciudad
+     * @var cadena
+     */
+    public $urlBase;
+
+
+    /**
+     * URL relativa de una ciudad específica
+     * @var cadena
+     */
+    public $url;
+
+
+    /**
+     * Nombre de la ciudad
+     * @var cadena
+     */
+    public $nombre;
+
+
+    /**
+     * id del Estado
+     * @var cadena
+     */
+    public $idEstado;
+
+
+     /**
+     * nombre del Estado
+     * @var cadena
+     */
+    public $Estado;
+    
+    /**
+     * id del Estado
+     * @var cadena
+     */
+    public $idPais;
+
+
+     /**
+     * nombre del pais y su bandera
+     * @var cadena
+     */
+    public $pais;   
+    
+     /**
+     * solo el nombre del pais
+     * @var cadena
+     */
+    public $paisSolo;       
+    
+
+     /**
+     * nombre del Estado
+     * @var cadena
+     */
+    public $codigo;      
+
+
+    /**
+     * Indicador del orden cronológio de la lista de ciudades
+     * @var lógico
+     */
+    public $listaAscendente = true;
+
+
+    /**
+     * Número de registros de la lista
+     * @var entero
+     */
+    public $registros = NULL;
+    
+    /**
+     * Número de registros activos de la lista de foros
+     * @var entero
+     */
+    public $registrosConsulta = NULL;    
+    
+    /**
+     * Orden predeterminado para organizar los listados
+     * @var entero
+     */
+    public $ordenInicial = NULL;       
+
+
+
+
+
+    /**
+     *
+     * Inicializar la Ciudad
+     *
+     * @param entero $id Código interno o identificador de la ciudad en la base de datos
+     *
+     */
+    public function __construct($id = NULL) {
+        global $sql;
+
+        $modulo        = new Modulo("CIUDADES");
+        $this->urlBase = "/".$modulo->url;
+        $this->url     = $modulo->url;
+       
+        $this->registros = $sql->obtenerValor("ciudades", "COUNT(id)", "id != '0'");
+        //establecer el valor del campo predeterminado para organizar los listados
+        $this->ordenInicial = "nombre";
+
+        if (isset($id)) {
+            $this->cargar($id);
+        }
+    }
+
+
+
+
+
+    /**
+     *
+     * Cargar los datos de una ciudad
+     *
+     * @param entero $id Código interno o identificador de la ciudad en la base de datos
+     *
+     */
+    public function cargar($id) {
+        global $sql, $configuracion;
+
+        if (isset($id) && $sql->existeItem("ciudades", "id", intval($id))) {
+
+            $tablas = array(
+                "c" => "ciudades",
+                "e" => "estados",
+                "p" => "paises"
+            );
+
+            $columnas = array(
+                "id"       => "c.id",
+                "idEstado" => "c.id_estado",
+                "nombre"   => "c.nombre",
+                "Estado"   => "e.nombre",
+                "idPais"   => "e.id_pais",
+                "pais"     => "p.nombre",
+                "codigo"   => "p.codigo_iso"
+            );
+
+            $condicion = "c.id_estado = e.id AND e.id_pais = p.id AND c.id = '$id'";
+
+            $consulta = $sql->seleccionar($tablas, $columnas, $condicion);
+
+            if ($sql->filasDevueltas) {
+                $fila = $sql->filaEnObjeto($consulta);
+
+                foreach ($fila as $propiedad => $valor) {
+                    $this->$propiedad = $valor;
+                }
+                
+                $this->paisSolo = $this->pais;
+                $this->pais = HTML::imagen($configuracion["SERVIDOR"]["media"] . $configuracion["RUTAS"]["iconosBanderas"] . "/" . strtolower($this->codigo) . ".png", "miniaturaBanderas margenDerecha").$this->pais;
+                $this->url = $this->urlBase."/".$this->usuario;
+            }
+        }
+    }
+
+
+
+
+    /**
+     *
+     * Adicionar una ciudad
+     *
+     * @param  arreglo $datos       Datos de la ciudad a adicionar
+     * @return entero               Código interno o identificador de la ciudad en la base de datos (NULL si hubo error)
+     *
+     */
+    public function adicionar($datos) {
+        global $sql;
+        
+        $idEstado = $sql->obtenerValor("lista_estados", "id", "cadena = '".utf8_decode($datos["id_estado"]) ."'");
+        
+        $datosCiudad = array(
+            "nombre"    => $datos["nombre"],
+            "id_estado" => $idEstado
+        );
+
+        $consulta = $sql->insertar("ciudades", $datosCiudad);
+
+        if ($consulta) {
+            return $sql->ultimoId;
+
+        } else {
+            return NULL;
+        }
+    }
+
+
+
+    /**
+     *
+     * Modificar una ciudad
+     *
+     * @param  arreglo $datos       Datos de la ciudad a modificar
+     * @return lógico               Indica si el procedimiento se pudo realizar correctamente o no
+     *
+     */
+    public function modificar($datos) {
+        global $sql;
+
+        if (!isset($this->id)) {
+            return NULL;
+        }
+        
+        $idEstado = $sql->obtenerValor("lista_estados", "id", "cadena = '".utf8_decode($datos["id_estado"])."'");
+        
+        $datosCiudad = array(
+            "nombre"    => $datos["nombre"],
+            "id_estado" => $idEstado
+        );
+        
+
+        $consulta = $sql->modificar("ciudades", $datosCiudad, "id = '".$this->id."'");
+        return $consulta;
+    }
+
+
+
+
+    /**
+     *
+     * Eliminar una ciudad
+     *
+     * @param entero $id    Código interno o identificador de la ciudad en la base de datos
+     * @return lógico       Indica si el procedimiento se pudo realizar correctamente o no
+     *
+     */
+    public function eliminar() {
+        global $sql;
+
+        if (!isset($this->id)) {
+            return NULL;
+        }
+
+        $consulta = $sql->eliminar("ciudades", "id = '".$this->id."'");
+        return $consulta;
+    }
+
+
+
+
+
+    /**
+     *
+     * Listar las ciudades
+     *
+     * @param entero  $cantidad    Número de ciudadesa incluir en la lista (0 = todas las entradas)
+     * @param arreglo $excepcion   Arreglo con los códigos internos o identificadores a omitir en la lista
+     * @param cadena  $condicion   Condición adicional (SQL)
+     * @return arreglo             Lista de ciudades
+     *
+     */
+    public function listar($inicio = 0, $cantidad = 0, $excepcion = NULL, $condicionGlobal = NULL, $orden = NULL) {
+        global $sql, $configuracion;
+
+        /*** Validar la fila inicial de la consulta ***/
+        if (!is_int($inicio) || $inicio < 0) {
+            $inicio = 0;
+        }
+
+        /*** Validar la cantidad de registros requeridos en la consulta ***/
+        if (!is_int($cantidad) || $cantidad <= 0) {
+            $cantidad = 0;
+        }
+
+        /*** Validar que la condición sea una cadena de texto ***/
+        if (!is_string($condicionGlobal)) {
+            $condicion = "";
+        }
+
+        /*** Validar que la excepción sea un arreglo y contenga elementos ***/
+        if (isset($excepcion) && is_array($excepcion) && count($excepcion)) {
+            $excepcion = implode(",", $excepcion);
+            $condicion = "c.id NOT IN ($excepcion) AND ";
+        }
+
+
+        /*** Definir el orden de presentación de los datos ***/
+        if(!isset($orden)){
+            $orden = $this->ordenInicial;
+        }
+        if ($this->listaAscendente) {
+            $orden = "$orden ASC";
+
+        } else {
+            $orden = "$orden DESC";
+        }
+
+        $tablas = array(
+            "c" => "ciudades",
+            "e" => "estados",
+            "p" => "paises"
+        );
+
+        $columnas = array(
+            "id"       => "c.id",
+            "idEstado" => "c.id_estado",
+            "nombre"   => "c.nombre",
+            "Estado"   => "e.nombre",
+            "idPais"   => "e.id_pais",
+            "pais"     => "p.nombre",
+            "codigo"   => "p.codigo_iso"
+        );
+
+            
+        
+         
+        if (!empty($condicionGlobal)) {
+            
+            $condicion .= $condicionGlobal." AND ";
+        } 
+        
+        $condicion .= "c.id_estado = e.id AND e.id_pais = p.id";
+       
+
+        if (is_null($this->registrosConsulta)) {
+            $sql->seleccionar($tablas, $columnas, $condicion);
+            $this->registrosConsulta = $sql->filasDevueltas;
+        }
+
+        $consulta = $sql->seleccionar($tablas, $columnas, $condicion, "", $orden, $inicio, $cantidad);
+
+        if ($sql->filasDevueltas) {
+            $lista = array();
+
+            while ($ciudad = $sql->filaEnObjeto($consulta)) {
+                $ciudad->url = $this->urlBase."/".$ciudad->id;
+                $ciudad->pais = HTML::imagen($configuracion["SERVIDOR"]["media"] . $configuracion["RUTAS"]["iconosBanderas"] . "/" . strtolower($ciudad->codigo) . ".png", "miniaturaBanderas margenDerechaTriple").$ciudad->pais;
+                $lista[]   = $ciudad;
+            }
+        }
+
+        return $lista;
+
+    }
+    
+    
+    public function generarTabla($arregloRegistros, $datosPaginacion = NULL){
+        global $textos;
+        //Declaracion de las columnas que se van a mostrar en la tabla
+        $datosTabla = array(                      
+            HTML::parrafo( $textos->id("NOMBRE")                ,  "centrado" ) => "nombre|c.nombre",
+            HTML::parrafo( $textos->id("ESTADO")                ,  "centrado" ) => "Estado|e.nombre",
+            HTML::parrafo( $textos->id("PAIS")                  ,  "centrado" ) => "pais|p.nombre"
+        );        
+        //ruta a donde se mandara la accion del doble click
+        $rutaPaginador = "/ajax".$this->urlBase."/move";
+        
+        return Recursos::generarTablaRegistros($arregloRegistros, $datosTabla, $rutaPaginador, $datosPaginacion).HTML::crearMenuBotonDerecho("CIUDADES");
+        
+    }    
+    
+    
+    
+}
+?>

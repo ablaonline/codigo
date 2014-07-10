@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="{%CODIFICACION%}"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="es" lang="es">
+<head>
+<title>{%TITULO_PAGINA%}</title>
+<meta http-equiv="content-type" content="text/html; charset={%CODIFICACION%}" />
+<meta name="keywords" content="{%PALABRAS_CLAVE%}" />
+<meta name="description" content="{%DESCRIPCION%}" />
+<link rel="shortcut icon" href="{%ICONO%}" />
+{%HOJAS_ESTILOS%}
+{%CODIGO_AUDIO%}
+</head>
+<body>
+<div id="full" class="ui-helper-hidden ui-helper-reset ui-corner-all">
+<div id="indicadorEspera" class="ui-widget-shadow ui-corner-all"><div class="ui-corner-all">{%TEXTO_ESPERA%}</div></div>
+<div id="contenedorAyudaUsuario" class="ui-widget-shadow ui-corner-all oculto"><div class="ui-corner-all"></div></div>
+<div id="barraCorporativas" class="">
+{%ENLACES_CORPORATIVOS%}
+</div>
+<div id="cabecera" class="ui-corner-top">
+<div id="flash">
+<img src="http://media.ablaonline.org/flash/animacionlogo2.png" width="212" height="115" alt="" />
+</div>
+{%BLOQUE_PUBLICIDAD_SUPERIOR%}
+</div>
+<div id="barraSeparadoraAzul" class="">
+</div><br>
+<div id="bloquePrincipal" class="ui-helper-clearfix ui-helper-reset">
+<div id="columnaDerecha" class="ui-helper-clearfix ui-helper-reset">
+{%BLOQUE_USUARIO%}
+{%BLOQUE_CALENDARIO_EVENTOS%}
+{%BLOQUE_ENCUESTA%}
+{%BLOQUE_PAUTA%}
+</div>
+<div id="columnaIzquierda" class="ui-helper-clearfix ui-helper-reset">
+{%BLOQUE_IZQUIERDO%}
+</div>
+</div>
+</div>
+<div id="barraPieDePagina" class="">
+<br>
+{%PIE_PAGINA%}
+</div>
+{%BARRA_CHAT%}
+<div id="cuadroDialogo"></div> <div id="cuadroDialogo1"></div> <div id="cuadroDialogo2"></div> <div id="cuadroDialogo3"></div> <div id="cuadroDialogo4"></div> <div id="cuadroDialogo5"></div>
+<div id="cuadroNotificaciones"></div>
+<input type="hidden" value="" name="fechasEventos" id="fechasEventos" />
+{%JAVASCRIPT%}
+<script type="text/javascript">var switchTo5x=true;</script>
+<script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
+<script type="text/javascript" src="http://s.sharethis.com/loader.js"></script>
+<script type="text/javascript">var _gaq=_gaq||[];_gaq.push(["_setAccount","UA-12996001-4"]);_gaq.push(["_setDomainName","none"]);_gaq.push(["_setAllowLinker",true]);_gaq.push(["_trackPageview"]);(function(){var b=document.createElement("script");b.type="text/javascript";b.async=true;b.src=("https:"==document.location.protocol?"https://ssl":"http://www")+".google-analytics.com/ga.js";var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(b,a)})();</script>
+<script>var options={publisher:"ur-fe2f6d04-bd83-f189-b7c8-a13883fe39dd",position:"left",ad:{visible:false,openDelay:5,closeDelay:0},chicklets:{items:["facebook","twitter","googleplus","delicious","pinterest","blogger","linkedin","sonico","wordpress","messenger","email"]}};var st_hover_widget=new sharethis.widgets.hoverbuttons(options);</script>
+</body>
+</html>

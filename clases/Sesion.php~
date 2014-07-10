@@ -1,0 +1,175 @@
+<?php
+
+/**
+ *
+ * @package     FOLCS
+ * @subpackage  Base
+ * @author      Francisco J. Lozano B. <fjlozano@felinux.com.co>
+ * @author      Julian A. Mondragón <jmondragon@felinux.com.co>
+ * @license     http://www.gnu.org/licenses/gpl.txt
+ * @copyright   Copyright (c) 2009 FELINUX LTDA
+ * @version     0.1
+ *
+ **/
+
+class Sesion {
+    public  static $id;
+    private static $sql;
+
+    /*** Iniciar la sesión ***/
+    public static function iniciar() {
+
+        self::$sql = new SQL();
+
+/*
+        session_set_save_handler(
+            array(__CLASS__, "abrir"),
+            array(__CLASS__, "cerrar"),
+            array(__CLASS__, "leer"),
+            array(__CLASS__, "escribir"),
+            array(__CLASS__, "terminar"),
+            array(__CLASS__, "limpiar")
+        );
+*/
+
+        Sesion::limpiar();
+
+        if (self::$id == "") {
+            session_start();
+        }
+
+        self::$id = session_id();
+
+        foreach ($_SESSION as $variable => $valor) {
+            $nombre  = "sesion_".$variable;
+            global $$nombre;
+            $$nombre = $valor;
+        }
+    }
+
+    /*** Finalizar la sesión ***/
+    public static function terminar() {
+        self::destruir(self::$id);
+    }
+
+    /*** Abrir una sesión ***/
+    public static function abrir() {
+        return TRUE;
+    }
+
+    /*** Cerrar una sesión ***/
+    public static function cerrar() {
+        return TRUE;
+    }
+
+    /*** Registrar una variable en la sesión ***/
+    public static function registrar($variable, $valor = "") {
+        global $$variable;
+
+        if (isset($valor)) {
+            $$variable = $valor;
+        }
+
+        $nombre = "sesion_".$variable;
+
+        if (isset($$variable)) {
+            global $$nombre;
+
+            $$nombre               = $$variable;
+            $_SESSION["$variable"] = $$variable;
+        }
+    }
+
+
+
+    /*** Eliminar una variable de sesión ***/
+    public static function borrar($variable) {
+        $nombre = "sesion_".$variable;
+
+        global $$nombre;
+
+        if (isset($$nombre)) {
+            unset($$nombre);
+            unset($_SESSION["$variable"]);
+        }
+    }
+
+    /*** Leer los datos una sesión ***/
+    public static function leer($id) {
+       /* $fecha     = time();
+        $resultado = self::$sql->seleccionar(array("sesiones"), array("contenido"), "id = '$id' AND expiracion > '$fecha'");
+
+        if (self::$sql->filasDevueltas) {
+            $datos = self::$sql->filaEnObjeto($resultado);
+            return $datos->contenido;
+
+        } else {
+            return FALSE;
+        } */
+	return true;
+    }
+
+    /*** Escribir los datos de una sesión ***/
+    public static function escribir($id, $contenido) {
+        global $sesion_usuarioSesion;
+
+        $expiracion = time() + get_cfg_var("session.gc_maxlifetime");
+
+      /*  $datos      = array(
+            "id"            => $id,
+            "expiracion"    => $expiracion,
+            "contenido"     => $contenido
+        ); 
+
+        $resultado  = self::$sql->reemplazar("sesiones", $datos);
+
+        if (isset($sesion_usuarioSesion) && is_object($sesion_usuarioSesion)) {
+            //$actualizaUsuario = self::$sql->modificar("sesiones", array("id_usuario" => $sesion_usuarioSesion->id, "disponible" => "1"), "id = '$id'");
+
+        } elseif (isset($_SESSION["usuarioSesion"])) {
+            $usuario          = $_SESSION["usuarioSesion"];
+            $actualizaUsuario = self::$sql->modificar("sesiones", array("id_usuario" => $usuario->id, "disponible" => "1"), "id = '$id'");
+        }
+
+        return $resultado; */
+	return true;
+
+    }
+
+    /*** Destruir una sesión ***/
+    public static function destruir($id) {
+
+        foreach ($_SESSION as $variable => $valor) {
+            unset($_SESSION[$variable]);
+        }
+
+        unset($_SESSION);
+
+        /*$resultado  = self::$sql->eliminar("sesiones","id='$id'");
+        return $resultado;*/
+	return true;
+    }
+
+
+
+
+    /**
+     * Eliminar las sesiones expiradas 
+     *
+     **/
+    public static function limpiar() {
+
+        $fecha      = time();
+        /*$resultado  = self::$sql->eliminar("sesiones","expiracion < '$fecha'");
+        return $resultado;*/
+	return true;
+
+     }//fin del metodo limpiar
+
+
+
+
+
+}//fin de la clase sesion
+
+?>

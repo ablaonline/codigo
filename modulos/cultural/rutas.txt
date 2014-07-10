@@ -1,0 +1,18 @@
+http://tympanus.net/codrops/2010/06/27/beautiful-photo-stack-gallery-with-jquery-and-css3/   //Esta puede ser para las galerias
+
+http://tympanus.net/codrops/2010/11/14/animated-portfolio-gallery/                          
+
+http://nicolahibbert.com/demo/liteAccordion/#imperial
+
+http://vandelaydesign.com/blog/web-development/jquery-image-galleries/
+
+http://www.smashingapps.com/2011/01/07/awesome-jquery-techniques-to-create-visually-impressive-photo-galleries.html
+
+http://tympanus.net/codrops/2010/05/27/awesome-mobile-image-gallery-web-app/
+
+
+
+crear calendario de eventos
+
+
+http://www.okadadesign.no/blog/codeigniter/create-an-event-calendar-using-codeigniter-and-jquery/
